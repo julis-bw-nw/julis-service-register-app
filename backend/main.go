@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -70,12 +73,14 @@ func main() {
 		DataService:       &db,
 	}
 
+	fileServer(r, "/", "backend/static")
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/register", userHandler.PostRegisterUserHandler())
 	})
 
 	srv := http.Server{
-		Addr: cfg.API.Bind,
+		Addr:    cfg.API.Bind,
+		Handler: r,
 	}
 
 	go func() {
@@ -87,4 +92,34 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+}
+
+func fileServer(r chi.Router, public string, static string) {
+	if strings.ContainsAny(public, "{}*") {
+		log.Println("FileServer does not permit any URL parameters.")
+		return
+	}
+
+	root, _ := filepath.Abs(static)
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		log.Printf("Failed to find dir %q", root)
+		return
+	}
+
+	fs := http.StripPrefix(public, http.FileServer(http.Dir(root)))
+
+	if public != "/" && public[len(public)-1] != '/' {
+		r.Get(public, http.RedirectHandler(public+"/", http.StatusMovedPermanently).ServeHTTP)
+		public += "/"
+	}
+
+	r.Get(public+"*", func(w http.ResponseWriter, r *http.Request) {
+		file := strings.Replace(r.RequestURI, public, "/", 1)
+
+		if fileInfo, err := os.Stat(root + file); os.IsNotExist(err) || fileInfo.IsDir() {
+			http.ServeFile(w, r, path.Join(root, "index.html"))
+			return
+		}
+		fs.ServeHTTP(w, r)
+	})
 }
