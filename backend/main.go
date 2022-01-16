@@ -10,13 +10,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/julis-bw-nw/julis-service-register-app/backend/db"
+	"github.com/julis-bw-nw/julis-service-register-app/backend/user"
 )
 
 const (
-	prefixEnv = "JULIS_REGISTER_APP_"
-	bindEnv   = prefixEnv + "BIND"
+	prefixEnv     = "JULIS_REGISTER_APP_"
+	configPathEnv = prefixEnv + "CONFIG_PATH"
+)
 
-	bindDef = "0.0.0.0:80"
+var (
+	configPath = "config.yml"
 )
 
 func getEnv(key string, def string) string {
@@ -26,10 +30,15 @@ func getEnv(key string, def string) string {
 	return def
 }
 
-func main() {
-	// Load config values
-	bind := getEnv(bindEnv, bindDef)
+func init() {
+	configPath = getEnv(configPathEnv, configPath)
 
+	if err := createConfigIfNotExist(configPath); err != nil {
+		log.Fatalf("Failed to create default config at %q; %s", configPath, err)
+	}
+}
+
+func main() {
 	r := chi.NewRouter()
 
 	// A good base middleware stack
@@ -43,8 +52,30 @@ func main() {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	cfg, err := loadConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to read config from %q, %s", configPath, err)
+	}
+
+	encrypter := encrypter{secret: cfg.Database.EncryptionSecret}
+	db := db.DB{
+		Host:     cfg.Database.Host,
+		Database: cfg.Database.Database,
+		Username: cfg.Database.Username,
+		Password: cfg.Database.Password,
+	}
+
+	userHandler := user.Handler{
+		EncryptionService: &encrypter,
+		DataService:       &db,
+	}
+
+	r.Route("/api", func(r chi.Router) {
+		r.Post("/register", userHandler.PostRegisterUserHandler())
+	})
+
 	srv := http.Server{
-		Addr: bind,
+		Addr: cfg.API.Bind,
 	}
 
 	go func() {
