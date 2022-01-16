@@ -1,11 +1,14 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -28,7 +31,7 @@ func getEnv(key string, def string) string {
 
 func main() {
 	// Load config values
-	//bind := getEnv(bindEnv, bindDef)
+	bind := getEnv(bindEnv, bindDef)
 
 	r := chi.NewRouter()
 
@@ -43,27 +46,28 @@ func main() {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	FileServer(r, "/", "backend/static")
-	//r.Mount("/api",)
+	fileServer(r, "/", "backend/static")
+	r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello from API"))
+	})
 
-	_ = http.ListenAndServe(":8080", r)
+	srv := http.Server{
+		Addr:    bind,
+		Handler: r,
+	}
 
-	/*	srv := http.Server{
-			Addr: bind,
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatal(err)
 		}
+	}()
 
-		go func() {
-			if err := srv.ListenAndServe(); err != nil {
-				log.Fatal(err)
-			}
-		}()
-
-		sc := make(chan os.Signal, 1)
-		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-		<-sc*/
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
 }
 
-func FileServer(r chi.Router, public string, static string) {
+func fileServer(r chi.Router, public string, static string) {
 	if strings.ContainsAny(public, "{}*") {
 		panic("FileServer does not permit any URL parameters.")
 	}
