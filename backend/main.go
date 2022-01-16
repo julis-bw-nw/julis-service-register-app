@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -16,7 +16,7 @@ const (
 	prefixEnv = "JULIS_REGISTER_APP_"
 	bindEnv   = prefixEnv + "BIND"
 
-	bindDef = "0.0.0.0:80"
+	bindDef = "0.0.0.0:8080"
 )
 
 func getEnv(key string, def string) string {
@@ -28,7 +28,7 @@ func getEnv(key string, def string) string {
 
 func main() {
 	// Load config values
-	bind := getEnv(bindEnv, bindDef)
+	//bind := getEnv(bindEnv, bindDef)
 
 	r := chi.NewRouter()
 
@@ -43,17 +43,50 @@ func main() {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	srv := http.Server{
-		Addr: bind,
+	FileServer(r, "/", "backend/static")
+	//r.Mount("/api",)
+
+	_ = http.ListenAndServe(":8080", r)
+
+	/*	srv := http.Server{
+			Addr: bind,
+		}
+
+		go func() {
+			if err := srv.ListenAndServe(); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
+		sc := make(chan os.Signal, 1)
+		signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+		<-sc*/
+}
+
+func FileServer(r chi.Router, public string, static string) {
+	if strings.ContainsAny(public, "{}*") {
+		panic("FileServer does not permit any URL parameters.")
 	}
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	root, _ := filepath.Abs(static)
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		println("Dir not found")
+	}
 
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-sc
+	fs := http.StripPrefix(public, http.FileServer(http.Dir(root)))
+
+	if public != "/" && public[len(public)-1] != '/' {
+		r.Get(public, http.RedirectHandler(public+"/", 301).ServeHTTP)
+		public += "/"
+	}
+
+	r.Get(public+"*", func(w http.ResponseWriter, r *http.Request) {
+		file := strings.Replace(r.RequestURI, public, "/", 1)
+
+		if fileInfo, err := os.Stat(root + file); os.IsNotExist(err) || fileInfo.IsDir() {
+			http.ServeFile(w, r, path.Join(root, "index.html"))
+			return
+		}
+		fs.ServeHTTP(w, r)
+	})
 }
