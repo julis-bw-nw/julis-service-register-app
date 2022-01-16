@@ -1,0 +1,50 @@
+
+<!doctype html>
+<html>
+<head>
+    <title>Shoelace webpack Example</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+<h1>Shoelace webpack Example</h1>
+
+<sl-button type="primary">Click me</sl-button>
+
+<br><br>
+
+<sl-input placeholder="Enter some text" style="max-width: 300px;"></sl-input>
+
+<br><br>
+
+<sl-rating></sl-rating>
+<sl-tooltip content="This is a tooltip">
+    <sl-button>Hover Me</sl-button>
+</sl-tooltip>
+
+
+<sl-dropdown>
+    <sl-button slot="trigger" caret>Dropdown</sl-button>
+    <sl-menu>
+        <sl-menu-item>Dropdown Item 1</sl-menu-item>
+        <sl-menu-item>Dropdown Item 2</sl-menu-item>
+        <sl-menu-item>Dropdown Item 3</sl-menu-item>
+        <sl-divider></sl-divider>
+        <sl-menu-item checked>Checked</sl-menu-item>
+        <sl-menu-item disabled>Disabled</sl-menu-item>
+        <sl-divider></sl-divider>
+        <sl-menu-item>
+            Prefix
+            <sl-icon slot="prefix" name="gift"></sl-icon>
+        </sl-menu-item>
+        <sl-menu-item>
+            Suffix Icon
+            <sl-icon slot="suffix" name="heart"></sl-icon>
+        </sl-menu-item>
+    </sl-menu>
+</sl-dropdown>
+
+
+
+<script src="main.js"></script>
+</body>
+</html>

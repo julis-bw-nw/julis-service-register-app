@@ -1,17 +1,20 @@
 const path = require('path');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin").default;
 
 
 module.exports = {
     entry: './src/app.js',
     output: {
         path: __dirname + '/dist/build',
-        filename: "bundle.js"
+        filename: "main.js"
     },
     devServer: {
-        contentBase: path.join(__dirname, 'src'),
-        port: 8000,
-        watchContentBase: true,
+        static: {
+            directory: path.join(__dirname, 'src')
+        },
+        port: 9000
     },
     module: {
         rules: [
@@ -22,12 +25,25 @@ module.exports = {
                     {loader: "css-loader"},
                     {loader: "sass-loader"}
                 ]
+            },
+            {
+                test: /\.css$/i,
+                use: [MiniCssExtractPlugin.loader, 'css-loader']
             }
         ]
     },
     plugins: [
         new HtmlWebpackPlugin({
             template: 'src/index.html'
+        }),
+        new MiniCssExtractPlugin(),
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, 'node_modules/@shoelace-style/shoelace/dist/assets'),
+                    to: path.resolve(__dirname, 'dist/build/shoelace/assets')
+                }
+            ]
         })
     ]
 }
