@@ -60,16 +60,25 @@ func main() {
 		log.Fatalf("Failed to read config from %q, %s", configPath, err)
 	}
 
-	encrypter := encrypter{secret: cfg.Database.EncryptionSecret}
+	encrypter, err := newEncrypter([]byte(cfg.Database.EncryptionSecret))
+	if err != nil {
+		log.Fatalf("Failed create encrypter, %s", err)
+	}
+
 	db := db.DB{
 		Host:     cfg.Database.Host,
 		Database: cfg.Database.Database,
 		Username: cfg.Database.Username,
 		Password: cfg.Database.Password,
+		Timeout:  time.Second * 3,
+	}
+
+	if err := db.Open(); err != nil {
+		log.Fatalf("Failed to connect to database; %s", err)
 	}
 
 	userHandler := user.Handler{
-		EncryptionService: &encrypter,
+		EncryptionService: encrypter,
 		DataService:       &db,
 	}
 

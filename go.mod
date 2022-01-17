@@ -7,12 +7,11 @@ require (
 	github.com/jackc/pgx/v4 v4.14.1
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	gopkg.in/yaml.v2 v2.4.0
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 )
 
-require github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
-
 require (
-	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

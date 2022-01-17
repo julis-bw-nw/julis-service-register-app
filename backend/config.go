@@ -4,10 +4,12 @@ import (
 	"io/ioutil"
 	"os"
 
+	_ "embed"
+
 	"gopkg.in/yaml.v2"
 )
 
-//go:embed config.default.yaml
+//go:embed config.default.yml
 var defaultConfig []byte
 
 type Config struct {

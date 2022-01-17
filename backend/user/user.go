@@ -7,7 +7,7 @@ import (
 
 type RegisterDTO struct {
 	DataDTO
-	RegisterKey string `json:"registerKey"`
+	RegistrationKey string `json:"registrationKey"`
 }
 
 type DataDTO struct {

@@ -31,10 +31,22 @@ AND claimed_at IS NULL;
 		return false, err
 	}
 
-	_, err := db.Exec(ctx, `
+	return true, db.BeginFunc(ctx, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `
 INSERT INTO unregistered_users
 (registration_key_id, first_name, last_name, email, password)
 VALUSE ($1, $2, $3, $4, $5);
-`, keyId, u.FirstName, u.LastName, u.Email, u.Password)
-	return true, err
+		`, keyId, u.FirstName, u.LastName, u.Email, u.Password); err != nil {
+			return err
+		}
+
+		if _, err := tx.Exec(ctx, `
+INSERT INTO registration_keys
+(claimed_at)
+VALUSE (CURRENT_TIMESTAMP)
+WHERE id = $1;`, keyId); err != nil {
+			return err
+		}
+		return nil
+	})
 }

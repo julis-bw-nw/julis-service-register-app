@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/julis-bw-nw/julis-service-register-app/backend/db"
@@ -36,10 +37,11 @@ func (h Handler) PostRegisterUserHandler() http.HandlerFunc {
 		encryptedUserData, err := h.EncryptionService.EncryptUserData(dto.DataDTO)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
 			return
 		}
 
-		keyExists, err := h.DataService.ClaimRegistrationKey(dto.RegisterKey, encryptedUserData)
+		keyExists, err := h.DataService.ClaimRegistrationKey(dto.RegistrationKey, encryptedUserData)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return

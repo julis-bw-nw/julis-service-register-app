@@ -6,4 +6,4 @@ database:
   database: postgres
   username: postgres
   password: postgres
-  encryption_secret: change_me
+  encryption_secret: passphrasewhichneedstobe32bytes!
