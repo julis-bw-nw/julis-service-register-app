@@ -20,6 +20,7 @@ type Config struct {
 type APIConfig struct {
 	Bind string `yaml:"bind"`
 }
+
 type DatabaseConfig struct {
 	Host             string `yaml:"host"`
 	Database         string `yaml:"database"`

@@ -13,8 +13,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/julis-bw-nw/julis-service-register-app/backend/db"
-	"github.com/julis-bw-nw/julis-service-register-app/backend/user"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 )
 
 const (
@@ -60,12 +61,12 @@ func main() {
 		log.Fatalf("Failed to read config from %q, %s", configPath, err)
 	}
 
-	encrypter, err := newEncrypter([]byte(cfg.Database.EncryptionSecret))
+	encrypter, err := register.NewEncrypter([]byte(cfg.Database.EncryptionSecret))
 	if err != nil {
 		log.Fatalf("Failed create encrypter, %s", err)
 	}
 
-	db := db.DB{
+	db := data.Service{
 		Host:     cfg.Database.Host,
 		Database: cfg.Database.Database,
 		Username: cfg.Database.Username,
@@ -77,14 +78,14 @@ func main() {
 		log.Fatalf("Failed to connect to database; %s", err)
 	}
 
-	userHandler := user.Handler{
+	userService := user.Service{
 		EncryptionService: encrypter,
 		DataService:       &db,
 	}
 
 	fileServer(r, "/", "backend/static")
 	r.Route("/api", func(r chi.Router) {
-		r.Post("/register", userHandler.PostRegisterUserHandler())
+		r.Mount("/user", userService)
 	})
 
 	srv := http.Server{

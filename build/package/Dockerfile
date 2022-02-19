@@ -1,7 +1,7 @@
 FROM golang AS builder
 LABEL stage=intermediate
 COPY . /julis-service-register-app
-WORKDIR /julis-service-register-app/backend
+WORKDIR /julis-service-register-app/cmd/register
 ENV GO111MODULE=on
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main .
 

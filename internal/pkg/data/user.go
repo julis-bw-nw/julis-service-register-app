@@ -1,20 +1,14 @@
-package db
+package data
 
 import (
 	"errors"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
 	"golang.org/x/net/context"
 )
 
-type EncryptedUserData struct {
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
-}
-
-func (db *DB) ClaimRegistrationKey(keyValue string, u EncryptedUserData) (bool, error) {
+func (db *Service) ClaimRegistrationKey(keyValue string, u user.Encrypted) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), db.Timeout)
 	defer cancel()
 

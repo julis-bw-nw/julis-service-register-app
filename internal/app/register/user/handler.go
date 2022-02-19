@@ -4,24 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/julis-bw-nw/julis-service-register-app/backend/db"
 )
 
-type EncryptionService interface {
-	EncryptUserData(u DataDTO) (db.EncryptedUserData, error)
-}
-
-type DataService interface {
-	ClaimRegistrationKey(keyValue string, u db.EncryptedUserData) (bool, error)
-}
-
-type Handler struct {
-	DataService       DataService
-	EncryptionService EncryptionService
-}
-
-func (h Handler) PostRegisterUserHandler() http.HandlerFunc {
+func (s Service) postRegisterUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var dto RegisterDTO
 		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
@@ -34,14 +19,14 @@ func (h Handler) PostRegisterUserHandler() http.HandlerFunc {
 			return
 		}
 
-		encryptedUserData, err := h.EncryptionService.EncryptUserData(dto.DataDTO)
+		encrypted, err := s.EncryptDTO(dto.DTO)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
 			return
 		}
 
-		keyExists, err := h.DataService.ClaimRegistrationKey(dto.RegistrationKey, encryptedUserData)
+		keyExists, err := s.DataService.ClaimRegistrationKey(dto.RegistrationKey, encrypted)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
