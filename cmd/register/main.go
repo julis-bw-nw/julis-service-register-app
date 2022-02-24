@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ func getEnv(key string, def string) string {
 func init() {
 	configPath = getEnv(configPathEnv, configPath)
 
-	if err := createConfigIfNotExist(configPath); err != nil {
+	if err := createConfigIfNotExist(configPath); err != nil && !errors.Is(err, os.ErrExist) {
 		log.Fatalf("Failed to create default config at %q; %s", configPath, err)
 	}
 }

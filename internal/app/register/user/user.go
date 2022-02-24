@@ -41,7 +41,6 @@ type Encrypted struct {
 
 type EncryptionService interface {
 	Encrypt(data string) []byte
-	Decrypt(data []byte) (string, error)
 }
 
 type DataService interface {
@@ -51,7 +50,12 @@ type DataService interface {
 type Service struct {
 	DataService       DataService
 	EncryptionService EncryptionService
-	http.Handler
+}
+
+func (s Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	router := chi.NewRouter()
+	router.Post("/", s.postRegisterUserHandler())
+	router.ServeHTTP(w, r)
 }
 
 func (s Service) EncryptDTO(dto DTO) (Encrypted, error) {
@@ -61,10 +65,4 @@ func (s Service) EncryptDTO(dto DTO) (Encrypted, error) {
 		Email:     s.EncryptionService.Encrypt(dto.Email),
 		Password:  s.EncryptionService.Encrypt(dto.Password),
 	}, nil
-}
-
-func (s Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	router := chi.NewRouter()
-	router.Post("/", s.postRegisterUserHandler())
-	router.ServeHTTP(w, r)
 }

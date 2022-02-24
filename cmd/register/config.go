@@ -1,8 +1,12 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"io/ioutil"
 	"os"
+	"text/template"
 
 	_ "embed"
 
@@ -10,31 +14,60 @@ import (
 )
 
 //go:embed config.default.yml
-var defaultConfig []byte
+var defaultConfig string
+var tmpl = template.New("defaultConfig")
+
+func init() {
+	tmpl = template.Must(tmpl.Parse(defaultConfig))
+}
 
 type Config struct {
-	API      APIConfig      `yaml:"api"`
-	Database DatabaseConfig `yaml:"database"`
+	API struct {
+		Bind string `yaml:"bind"`
+	} `yaml:"api"`
+	Database struct {
+		Host             string `yaml:"host"`
+		Database         string `yaml:"database"`
+		Username         string `yaml:"username"`
+		Password         string `yaml:"password"`
+		EncryptionSecret string `yaml:"encryption_secret"`
+	} `yaml:"database"`
 }
 
-type APIConfig struct {
-	Bind string `yaml:"bind"`
+type ConfigData struct {
+	Secret string
 }
 
-type DatabaseConfig struct {
-	Host             string `yaml:"host"`
-	Database         string `yaml:"database"`
-	Username         string `yaml:"username"`
-	Password         string `yaml:"password"`
-	EncryptionSecret string `yaml:"encryption_secret"`
+func generateDefaultData() (ConfigData, error) {
+	secret := make([]byte, 16)
+	if _, err := rand.Read(secret); err != nil {
+		return ConfigData{}, err
+	}
+
+	return ConfigData{
+		Secret: hex.EncodeToString(secret),
+	}, nil
 }
 
 func createConfigIfNotExist(path string) error {
 	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
-	return ioutil.WriteFile(path, defaultConfig, 0644)
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	d, err := generateDefaultData()
+	if err != nil {
+		return err
+	}
+
+	return tmpl.Execute(f, d)
 }
 
 func loadConfig(path string) (Config, error) {
