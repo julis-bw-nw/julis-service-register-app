@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+  julis-service-register-app:
+    build:
+      context: ..
+      dockerfile: build/package/Dockerfile
+    container_name: julis-service-register-app
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 8080:8080
+    environment:
+      JULIS_REGISTER_APP_CONFIG_PATH: "/config.yml"
+
+  postgres:
+    image: postgres:latest
+    container_name: julis-service-register-app-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+

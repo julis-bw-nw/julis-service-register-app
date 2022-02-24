@@ -13,3 +13,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# IDE config files
+.idea
+.vscode
+
+# Dev config file
+config.dev.yml
+
+# Generated files
+*_mock_test.go
