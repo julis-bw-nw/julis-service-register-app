@@ -19,8 +19,22 @@ services:
     image: postgres:latest
     container_name: julis-service-register-app-postgres
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
 
-
+  lldap:
+    image: nitnelave/lldap:stable
+    ports:
+      - "17170:17170"
+    volumes:
+      - "./devdata/lldap:/data"
+    environment:
+      - LLDAP_JWT_SECRET=lldap
+      - LLDAP_LDAP_USER_PASS=password1
+      - LLDAP_LDAP_BASE_DN=dc=example,dc=com

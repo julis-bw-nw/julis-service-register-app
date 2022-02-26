@@ -68,11 +68,12 @@ func main() {
 	}
 
 	db := data.Service{
-		Host:     cfg.Database.Host,
-		Database: cfg.Database.Database,
-		Username: cfg.Database.Username,
-		Password: cfg.Database.Password,
-		Timeout:  time.Second * 3,
+		Host:              cfg.Database.Host,
+		Database:          cfg.Database.Database,
+		Username:          cfg.Database.Username,
+		Password:          cfg.Database.Password,
+		Timeout:           time.Second * 3,
+		EncryptionService: encrypter,
 	}
 
 	if err := db.Open(); err != nil {
@@ -80,8 +81,7 @@ func main() {
 	}
 
 	userService := user.Service{
-		EncryptionService: encrypter,
-		DataService:       &db,
+		DataService: &db,
 	}
 
 	fileServer(r, "/", "backend/static")
