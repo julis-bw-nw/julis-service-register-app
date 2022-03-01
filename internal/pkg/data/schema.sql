@@ -1,10 +1,13 @@
+DROP TABLE IF EXISTS unregistered_users;
+DROP TABLE IF EXISTS registration_keys;
+
 CREATE TABLE IF NOT EXISTS registration_keys
 (
     id BIGSERIAL NOT NULL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     claimed_at TIMESTAMP,
     key_value TEXT NOT NULL UNIQUE,
-    instant_registration BOOLEAN NOT NULL DEFAULT FALSE,
+    instant_registration BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS unregistered_users
@@ -15,5 +18,5 @@ CREATE TABLE IF NOT EXISTS unregistered_users
     approved_at TIMESTAMP,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL
 );

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -13,16 +15,12 @@ import (
 
 var ErrResponseNotOK = errors.New("response is not 200 OK")
 
-type DataService interface {
-	UsersToRegister() ([]user.User, error)
-}
-
 type Service struct {
-	DataService DataService
-	Client      http.Client
+	Client  *http.Client
+	BaseURL string
 }
 
-func (s Service) CreateUser(url string, user user.User) error {
+func (s Service) CreateUser(user user.User) error {
 	graphql := map[string]interface{}{
 		"variables": map[string]interface{}{
 			"user": map[string]interface{}{
@@ -33,7 +31,7 @@ func (s Service) CreateUser(url string, user user.User) error {
 				"lastName":    user.LastName,
 			},
 		},
-		"query":         "mutation CreateUser($user: CreateUserInput!) {\n  createUser(user: $user) {\n    id\n    creationDate\n  }\n}\n",
+		"query":         "mutation CreateUser($user: CreateUserInput!) { createUser(user: $user) { id creationDate } }",
 		"operationName": "CreateUser",
 	}
 
@@ -42,18 +40,29 @@ func (s Service) CreateUser(url string, user user.User) error {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bb))
+	log.Println(string(bb))
+
+	// TODO: Could cause a race condition on concurrent read of s.BaseURL
+	req, err := http.NewRequest(http.MethodPost, s.BaseURL+"/api/graphql", bytes.NewReader(bb))
 	if err != nil {
 		return err
 	}
+	req.Header.Add("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJleHAiOiIyMDIyLTAzLTAyVDE4OjMzOjA5LjUyMDQxMTg1MloiLCJpYXQiOiIyMDIyLTAzLTAxVDE4OjMzOjA5LjUyMDQxMjYyMloiLCJ1c2VyIjoiYWRtaW4iLCJncm91cHMiOlsibGxkYXBfYWRtaW4iXX0.IIfZWI7iY2gU-txGDDu8eFaY_2YwD-qf64SFJqlEOusyJp8KyvWSZtjWdxvWdyRMKGPKwzwLi8N0P6g_C1GL5g")
+	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := s.Client.Do(req)
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
 	if resp.StatusCode != http.StatusOK {
+		log.Println(resp.Status)
+		log.Println(string(data))
 		return ErrResponseNotOK
 	}
 

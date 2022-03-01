@@ -30,6 +30,7 @@ services:
 
   lldap:
     image: nitnelave/lldap:stable
+    container_name: lldap
     ports:
       - "17170:17170"
     volumes:

@@ -14,8 +14,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/regkey"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/ldap"
 )
 
 const (
@@ -72,14 +74,26 @@ func main() {
 	if err := db.Open(); err != nil {
 		log.Fatalf("Failed to connect to database; %s", err)
 	}
+	if err := db.Migrate(); err != nil {
+		log.Fatalf("Failed to connect to database; %s", err)
+	}
 
-	userService := user.Service{
+	regKeyService := regkey.Service{
 		DataService: &db,
 	}
 
-	fileServer(r, "/", "backend/static")
+	userService := user.Service{
+		DataService: &db,
+		LDAPService: ldap.Service{
+			BaseURL: "http://lldap:17170",
+			Client:  http.DefaultClient,
+		},
+	}
+
+	fileServer(r, "/", "web/static")
 	r.Route("/api", func(r chi.Router) {
-		r.Mount("/user", userService)
+		r.Mount("/users", userService)
+		r.Mount("/regkeys", regKeyService)
 	})
 
 	srv := http.Server{

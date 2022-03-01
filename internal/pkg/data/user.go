@@ -18,7 +18,8 @@ func (s *Service) ClaimRegistrationKey(keyValue string, user user.User) (bool, e
 SELECT id, instant_registration
 FROM registration_keys
 WHERE key_value = $1
-AND claimed_at IS NULL;`, keyValue).Scan(&keyId, &instantRegistration); err != nil {
+AND claimed_at IS NULL;
+`, keyValue).Scan(&keyId, &instantRegistration); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
 		}
@@ -30,15 +31,14 @@ AND claimed_at IS NULL;`, keyValue).Scan(&keyId, &instantRegistration); err != n
 		if _, err := tx.Exec(ctx, `
 INSERT INTO unregistered_users
 (registration_key_id, approved_at, first_name, last_name, email)
-VALUSE ($1, CASE WHEN $2 THEN CURRENT_TIMESTAMP ELSE NULL, $3, $4, $5);
+VALUES ($1, CASE WHEN $2 THEN CURRENT_TIMESTAMP ELSE NULL END, $3, $4, $5);
 `, keyId, instantRegistration, user.FirstName, user.LastName, user.Email); err != nil {
 			return err
 		}
 
 		if _, err := tx.Exec(ctx, `
-INSERT INTO registration_keys
-(claimed_at)
-VALUSE (CURRENT_TIMESTAMP)
+UPDATE registration_keys
+SET claimed_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 `, keyId); err != nil {
 			return err
@@ -54,7 +54,7 @@ func (s *Service) UsersToRegister() ([]user.User, error) {
 	rows, err := s.Query(ctx, `
 SELECT first_name, last_name, email
 FROM unregistered_users
-WHERE approved_at IS NOT NULL;`)
+WHERE approved_at IS NULL;`)
 	if err != nil {
 		return nil, err
 	}
@@ -69,4 +69,19 @@ WHERE approved_at IS NOT NULL;`)
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func (s *Service) UserByID(id int64) (user.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
+	defer cancel()
+
+	var user user.User
+	if err := s.QueryRow(ctx, `
+SELECT first_name, last_name, email
+FROM unregistered_users
+WHERE id = $1;
+`, id).Scan(&user.FirstName, &user.LastName, &user.Email); err != nil {
+		return user, err
+	}
+	return user, nil
 }
