@@ -25,4 +25,4 @@ config.dev.yml
 *_mock_test.go
 
 # Data for dev docker volumes
-/devdata
+deployments/devdata

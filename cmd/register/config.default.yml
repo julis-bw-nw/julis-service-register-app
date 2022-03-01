@@ -6,4 +6,3 @@ database:
   database: postgres
   username: postgres
   password: postgres
-  encryption_secret: {{.Secret}}

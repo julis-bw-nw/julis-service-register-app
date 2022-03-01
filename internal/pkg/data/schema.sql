@@ -16,5 +16,4 @@ CREATE TABLE IF NOT EXISTS unregistered_users
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT NOT NULL,
-    password BYTEA NOT NULL,
 );

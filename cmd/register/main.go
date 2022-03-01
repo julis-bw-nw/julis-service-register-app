@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 )
@@ -62,18 +61,12 @@ func main() {
 		log.Fatalf("Failed to read config from %q, %s", configPath, err)
 	}
 
-	encrypter, err := register.NewEncrypter([]byte(cfg.Database.EncryptionSecret))
-	if err != nil {
-		log.Fatalf("Failed create encrypter, %s", err)
-	}
-
 	db := data.Service{
-		Host:              cfg.Database.Host,
-		Database:          cfg.Database.Database,
-		Username:          cfg.Database.Username,
-		Password:          cfg.Database.Password,
-		Timeout:           time.Second * 3,
-		EncryptionService: encrypter,
+		Host:     cfg.Database.Host,
+		Database: cfg.Database.Database,
+		Username: cfg.Database.Username,
+		Password: cfg.Database.Password,
+		Timeout:  time.Second * 3,
 	}
 
 	if err := db.Open(); err != nil {

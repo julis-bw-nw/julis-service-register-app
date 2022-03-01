@@ -8,12 +8,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (s *Service) OnUserRegistration(f func(user.User)) {
-	
-}
-
 func (s *Service) ClaimRegistrationKey(keyValue string, user user.User) (bool, error) {
-	encryptedPwd := s.EncryptionService.Encrypt(user.Password)
 	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
 	defer cancel()
 
@@ -34,9 +29,9 @@ AND claimed_at IS NULL;`, keyValue).Scan(&keyId, &instantRegistration); err != n
 	return true, s.BeginFunc(ctx, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 INSERT INTO unregistered_users
-(registration_key_id, approved_at, first_name, last_name, email, password)
-VALUSE ($1, CASE WHEN $2 THEN CURRENT_TIMESTAMP ELSE NULL, $3, $4, $5, $6);
-`, keyId, instantRegistration, user.FirstName, user.LastName, user.Email, encryptedPwd); err != nil {
+(registration_key_id, approved_at, first_name, last_name, email)
+VALUSE ($1, CASE WHEN $2 THEN CURRENT_TIMESTAMP ELSE NULL, $3, $4, $5);
+`, keyId, instantRegistration, user.FirstName, user.LastName, user.Email); err != nil {
 			return err
 		}
 
@@ -57,7 +52,7 @@ func (s *Service) UsersToRegister() ([]user.User, error) {
 	defer cancel()
 
 	rows, err := s.Query(ctx, `
-SELECT first_name, last_name, email, password
+SELECT first_name, last_name, email
 FROM unregistered_users
 WHERE approved_at IS NOT NULL;`)
 	if err != nil {
@@ -67,16 +62,10 @@ WHERE approved_at IS NOT NULL;`)
 
 	var users []user.User
 	for rows.Next() {
-		var encryptedPwd []byte
 		var user user.User
-		if err := rows.Scan(&user.FirstName, &user.LastName, &user.Email, &encryptedPwd); err != nil {
+		if err := rows.Scan(&user.FirstName, &user.LastName, &user.Email); err != nil {
 			return nil, err
 		}
-		pwd, err := s.EncryptionService.Decrypt(encryptedPwd)
-		if err != nil {
-			return nil, err
-		}
-		user.Password = pwd
 		users = append(users, user)
 	}
 	return users, nil

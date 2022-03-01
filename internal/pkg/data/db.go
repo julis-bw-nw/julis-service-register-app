@@ -14,18 +14,12 @@ import (
 //go:embed schema.sql
 var schema string
 
-type EncryptionService interface {
-	Encrypt(data string) []byte
-	Decrypt(data []byte) (string, error)
-}
-
 type Service struct {
 	Host              string
 	Database          string
 	Username          string
 	Password          string
 	Timeout           time.Duration
-	EncryptionService EncryptionService
 
 	*pgxpool.Pool
 }

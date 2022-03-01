@@ -22,7 +22,6 @@ func (s Service) postRegisterUserHandler() http.HandlerFunc {
 			FirstName: dto.FirstName,
 			LastName:  dto.LastName,
 			Email:     dto.Email,
-			Password:  dto.Password,
 		}
 
 		keyExists, err := s.DataService.ClaimRegistrationKey(dto.RegistrationKey, user)
@@ -37,5 +36,11 @@ func (s Service) postRegisterUserHandler() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
+	}
+}
+
+func (s Service) getRegisteredUserHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		
 	}
 }

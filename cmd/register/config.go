@@ -1,12 +1,9 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"io/ioutil"
 	"os"
-	"text/template"
 
 	_ "embed"
 
@@ -14,12 +11,7 @@ import (
 )
 
 //go:embed config.default.yml
-var defaultConfig string
-var tmpl = template.New("defaultConfig")
-
-func init() {
-	tmpl = template.Must(tmpl.Parse(defaultConfig))
-}
+var defaultConfig []byte
 
 type Config struct {
 	API struct {
@@ -34,21 +26,6 @@ type Config struct {
 	} `yaml:"database"`
 }
 
-type ConfigData struct {
-	Secret string
-}
-
-func generateDefaultData() (ConfigData, error) {
-	secret := make([]byte, 16)
-	if _, err := rand.Read(secret); err != nil {
-		return ConfigData{}, err
-	}
-
-	return ConfigData{
-		Secret: hex.EncodeToString(secret),
-	}, nil
-}
-
 func createConfigIfNotExist(path string) error {
 	if _, err := os.Stat(path); err == nil {
 		return nil
@@ -56,18 +33,7 @@ func createConfigIfNotExist(path string) error {
 		return err
 	}
 
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	d, err := generateDefaultData()
-	if err != nil {
-		return err
-	}
-
-	return tmpl.Execute(f, d)
+	return ioutil.WriteFile(configPath, []byte(defaultConfig), 0644)
 }
 
 func loadConfig(path string) (Config, error) {
