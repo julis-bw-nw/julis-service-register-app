@@ -24,6 +24,11 @@ type Config struct {
 		Password         string `yaml:"password"`
 		EncryptionSecret string `yaml:"encryption_secret"`
 	} `yaml:"database"`
+	LLDAP struct {
+		Host     string `yaml:"host"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	}
 }
 
 func createConfigIfNotExist(path string) error {

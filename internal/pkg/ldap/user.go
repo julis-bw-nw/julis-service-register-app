@@ -153,7 +153,7 @@ func (at *authenticatorTransport) RoundTrip(r *http.Request) (*http.Response, er
 	return http.DefaultTransport.RoundTrip(r)
 }
 
-func NewLLDAPService(c *http.Client, addr string, options ...Option) (Service, error) {
+func NewLLDAPService(c *http.Client, addr string, options ...Option) Service {
 	for _, opt := range options {
 		opt(c, addr)
 	}
@@ -161,7 +161,7 @@ func NewLLDAPService(c *http.Client, addr string, options ...Option) (Service, e
 	return &lldapService{
 		client: c,
 		addr:   addr,
-	}, nil
+	}
 }
 
 type lldapService struct {

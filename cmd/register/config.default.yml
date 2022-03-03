@@ -6,3 +6,8 @@ database:
   database: postgres
   username: postgres
   password: postgres
+
+lldap:
+  host: lldap:17170
+  username: admin
+  password: password1

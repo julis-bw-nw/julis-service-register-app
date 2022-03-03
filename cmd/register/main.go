@@ -82,12 +82,15 @@ func main() {
 		DataService: &db,
 	}
 
+	cli := &http.Client{
+		Timeout: time.Second * 3,
+	}
+
+	ldapService := ldap.NewLLDAPService(cli, cfg.LLDAP.Host, ldap.WithAuthenticatorTransport(cfg.LLDAP.Username, cfg.LLDAP.Password))
+
 	userService := user.Service{
 		DataService: &db,
-		LDAPService: ldap.Service{
-			BaseURL: "http://lldap:17170",
-			Client:  http.DefaultClient,
-		},
+		LDAPService: ldapService,
 	}
 
 	fileServer(r, "/", "web/static")
