@@ -14,21 +14,27 @@ import (
 var defaultConfig []byte
 
 type Config struct {
-	API struct {
-		Bind string `yaml:"bind"`
-	} `yaml:"api"`
-	Database struct {
-		Host             string `yaml:"host"`
-		Database         string `yaml:"database"`
-		Username         string `yaml:"username"`
-		Password         string `yaml:"password"`
-		EncryptionSecret string `yaml:"encryption_secret"`
-	} `yaml:"database"`
-	LLDAP struct {
-		Host     string `yaml:"host"`
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
-	}
+	API      API      `yaml:"api"`
+	Database Database `yaml:"database"`
+	LLDAP    LLDAP    `yaml:"lldap"`
+}
+
+type API struct {
+	Bind string `yaml:"bind"`
+}
+
+type Database struct {
+	Host             string `yaml:"host"`
+	Database         string `yaml:"database"`
+	Username         string `yaml:"username"`
+	Password         string `yaml:"password"`
+	EncryptionSecret string `yaml:"encryption_secret"`
+}
+
+type LLDAP struct {
+	Host     string `yaml:"host"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 func createConfigIfNotExist(path string) error {

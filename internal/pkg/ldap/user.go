@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 )
 
 var ErrResponseNotOK = errors.New("response is not 200 OK")
 
 type Service interface {
-	CreateUser(user user.User) error
+	CreateUser(user data.User) error
 }
 
 type Option func(c *http.Client, addr string)
@@ -171,15 +171,15 @@ type lldapService struct {
 	addr string
 }
 
-func userId(user user.User) string {
+func userId(user data.User) string {
 	return strings.ToLower(string(user.FirstName[0]) + user.LastName)
 }
 
-func displayName(user user.User) string {
+func displayName(user data.User) string {
 	return fmt.Sprintf("%s %s", user.FirstName, user.LastName)
 }
 
-func (s *lldapService) CreateUser(user user.User) error {
+func (s *lldapService) CreateUser(user data.User) error {
 	graphql := map[string]interface{}{
 		"variables": map[string]interface{}{
 			"user": map[string]interface{}{

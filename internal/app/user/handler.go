@@ -7,25 +7,29 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 )
 
 func (s Service) getUsersToRegisterHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		users, err := s.DataService.UsersToRegister()
+		users, err := s.DataService.Users()
 		if err != nil {
 			log.Printf("failed to get users form data service: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		bb, err := json.Marshal(users)
-		if err != nil {
+		dtos := make([]userFullDTO, len(users))
+		for i := range dtos {
+			dtos[i] = mapUserFull(users[i])
+		}
+
+		if err := json.NewEncoder(w).Encode(users); err != nil {
 			log.Printf("failed to marshal users to json: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		w.Write(bb)
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -43,20 +47,20 @@ func (s Service) postRegisterUserHandler() http.HandlerFunc {
 			return
 		}
 
-		user := User{
+		user := data.User{
 			FirstName: dto.FirstName,
 			LastName:  dto.LastName,
 			Email:     dto.Email,
 		}
 
-		keyExists, err := s.DataService.ClaimRegistrationKey(dto.RegistrationKey, user)
+		instantRegistration, err := s.DataService.ClaimRegistrationKey(dto.RegistrationKey, user)
 		if err != nil {
 			log.Printf("failed to claim registration key: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if !keyExists {
+		if instantRegistration {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}

@@ -1,7 +1,7 @@
-package data
+package postgres
 
 import (
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/regkey"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/regkey"
 	"golang.org/x/net/context"
 )
 

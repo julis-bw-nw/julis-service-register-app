@@ -1,87 +1,17 @@
 package data
 
-import (
-	"errors"
+import "time"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
-	"golang.org/x/net/context"
-)
-
-func (s *Service) ClaimRegistrationKey(keyValue string, user user.User) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
-	defer cancel()
-
-	var keyId int64
-	var instantRegistration bool
-	if err := s.QueryRow(ctx, `
-SELECT id, instant_registration
-FROM registration_keys
-WHERE key_value = $1
-AND claimed_at IS NULL;
-`, keyValue).Scan(&keyId, &instantRegistration); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	// Transaction to ensure that a registration key can only be claimed by one user
-	return true, s.BeginFunc(ctx, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `
-INSERT INTO unregistered_users
-(registration_key_id, approved_at, first_name, last_name, email)
-VALUES ($1, CASE WHEN $2 THEN CURRENT_TIMESTAMP ELSE NULL END, $3, $4, $5);
-`, keyId, instantRegistration, user.FirstName, user.LastName, user.Email); err != nil {
-			return err
-		}
-
-		if _, err := tx.Exec(ctx, `
-UPDATE registration_keys
-SET claimed_at = CURRENT_TIMESTAMP
-WHERE id = $1;
-`, keyId); err != nil {
-			return err
-		}
-		return nil
-	})
+type User struct {
+	ID        uint64
+	CreatedAt time.Time
+	FirstName string
+	LastName  string
+	Email     string
 }
 
-func (s *Service) UsersToRegister() ([]user.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
-	defer cancel()
-
-	rows, err := s.Query(ctx, `
-SELECT first_name, last_name, email
-FROM unregistered_users
-WHERE approved_at IS NULL;`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []user.User
-	for rows.Next() {
-		var user user.User
-		if err := rows.Scan(&user.FirstName, &user.LastName, &user.Email); err != nil {
-			return nil, err
-		}
-		users = append(users, user)
-	}
-	return users, nil
-}
-
-func (s *Service) UserByID(id int64) (user.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
-	defer cancel()
-
-	var user user.User
-	if err := s.QueryRow(ctx, `
-SELECT first_name, last_name, email
-FROM unregistered_users
-WHERE id = $1;
-`, id).Scan(&user.FirstName, &user.LastName, &user.Email); err != nil {
-		return user, err
-	}
-	return user, nil
+type UserService interface {
+	UserByID(id int64) (User, error)
+	Users() ([]User, error)
+	ClaimRegistrationKey(key string, user User) (keyExists bool, err error)
 }

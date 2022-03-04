@@ -14,9 +14,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/regkey"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/regkey"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/user"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data/postgres"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/ldap"
 )
 
@@ -63,7 +63,7 @@ func main() {
 		log.Fatalf("Failed to read config from %q, %s", configPath, err)
 	}
 
-	db := data.Service{
+	db := postgres.Service{
 		Host:     cfg.Database.Host,
 		Database: cfg.Database.Database,
 		Username: cfg.Database.Username,
@@ -74,8 +74,9 @@ func main() {
 	if err := db.Open(); err != nil {
 		log.Fatalf("Failed to connect to database; %s", err)
 	}
-	if err := db.Migrate(); err != nil {
-		log.Fatalf("Failed to connect to database; %s", err)
+
+	if err := db.MigrateSchema(); err != nil {
+		log.Fatalf("Failed to migrate database; %s", err)
 	}
 
 	regKeyService := regkey.Service{
@@ -95,7 +96,7 @@ func main() {
 
 	fileServer(r, "/", "web/static")
 	r.Route("/api", func(r chi.Router) {
-		r.Mount("/users", userService)
+		r.Handle("/users", userService.Handler())
 		r.Mount("/regkeys", regKeyService)
 	})
 
