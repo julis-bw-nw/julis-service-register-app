@@ -26,3 +26,6 @@ config.dev.yml
 
 # Data for dev docker volumes
 deployments/devdata
+
+# Generated Web CSS
+web/src/css

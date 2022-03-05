@@ -85,7 +85,7 @@ func main() {
 		LDAPService: ldapService,
 	}
 
-	fileServer(r, "/", "web/static")
+	fileServer(r, "/", "web/src")
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/users", userService.Handler())
 		r.Mount("/register-keys", regKeyService.Handler())
