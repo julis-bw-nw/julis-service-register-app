@@ -14,7 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/regkey"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/app/registerkey"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/app/user"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 	"github.com/julis-bw-nw/julis-service-register-app/pkg/ldap/lldap"
@@ -70,7 +70,7 @@ func main() {
 		log.Fatalf("Failed connect to DB; %s", err)
 	}
 
-	regKeyService := regkey.Service{
+	regKeyService := registerkey.Service{
 		DataService: db,
 	}
 

@@ -1,4 +1,4 @@
-package regkey
+package registerkey
 
 import (
 	"encoding/json"
