@@ -16,7 +16,7 @@ type User struct {
 	RegisterKey   RegisterKey
 	FirstName     string
 	LastName      string
-	Email         string
+	Email         string `gorm:"unique"`
 }
 
 func (db service) UserByID(id int64) (User, error) {
