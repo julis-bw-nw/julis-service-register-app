@@ -13,10 +13,11 @@ type Service struct {
 	DataService data.Service
 }
 
-func (s Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	router := chi.NewRouter()
-	router.Post("/", s.postCreateRegisterKeyHandler())
-	router.ServeHTTP(w, r)
+func (s Service) Handler() http.Handler {
+	r := chi.NewRouter()
+	r.Get("/", s.getRegisterKeyHandler())
+	r.Post("/", s.postCreateRegisterKeyHandler())
+	return r
 }
 
 func generateRandomKey() (string, error) {

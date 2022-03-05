@@ -12,6 +12,7 @@ type registerKeyDTO struct {
 	ID                  uint      `json:"id"`
 	CreatedAt           time.Time `json:"createdAt"`
 	MaxClaims           int       `json:"maxClaims"`
+	Claims              int       `json:"claims"`
 	KeyValue            string    `json:"keyValue"`
 	InstantRegistration bool      `json:"instantRegistration"`
 }
@@ -38,6 +39,7 @@ func mapRegisterKeyDataToDTO(regKey data.RegisterKey) registerKeyDTO {
 		ID:                  regKey.ID,
 		CreatedAt:           regKey.CreatedAt,
 		MaxClaims:           int(regKey.MaxClaims),
+		Claims:              len(regKey.Users),
 		KeyValue:            regKey.KeyValue,
 		InstantRegistration: regKey.InstantRegistration,
 	}

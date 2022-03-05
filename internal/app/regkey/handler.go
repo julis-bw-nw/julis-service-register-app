@@ -6,6 +6,30 @@ import (
 	"net/http"
 )
 
+func (s Service) getRegisterKeyHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		regKeys, err := s.DataService.RegisterKeys()
+		if err != nil {
+			log.Printf("failed to get register keys form data service: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		dtos := make([]registerKeyDTO, len(regKeys))
+		for i := range dtos {
+			dtos[i] = mapRegisterKeyDataToDTO(regKeys[i])
+		}
+
+		if err := json.NewEncoder(w).Encode(dtos); err != nil {
+			log.Printf("failed to marshal register keys to json: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func (s Service) postCreateRegisterKeyHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var dto registerKeyDTO
