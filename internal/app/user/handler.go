@@ -35,7 +35,7 @@ func (s Service) getUsersHandler() http.HandlerFunc {
 	}
 }
 
-func (s Service) postCreateUserHandler() http.HandlerFunc {
+func (s Service) postRegisterUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var dto registerDTO
 		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
@@ -70,7 +70,7 @@ func (s Service) postCreateUserHandler() http.HandlerFunc {
 	}
 }
 
-func (s Service) postRegisterUserInLDAPHandler() http.HandlerFunc {
+func (s Service) postApproveUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 		if err != nil {

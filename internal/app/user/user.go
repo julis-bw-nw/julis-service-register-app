@@ -16,7 +16,7 @@ type Service struct {
 func (s Service) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/", s.getUsersHandler())
-	r.Post("/", s.postCreateUserHandler())
-	r.Post("/{userId}", s.postRegisterUserInLDAPHandler())
+	r.Post("/", s.postRegisterUserHandler())
+	r.Post("/approve/{userId}", s.postApproveUserHandler())
 	return r
 }
