@@ -1,16 +1,14 @@
 package regkey
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
 )
 
 func (s Service) postCreateRegisterKeyHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var dto registrationKeyDTO
+		var dto registerKeyDTO
 		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -22,33 +20,29 @@ func (s Service) postCreateRegisterKeyHandler() http.HandlerFunc {
 		}
 
 		if dto.KeyValue == "" {
-			keyBytes := make([]byte, 4)
-			if _, err := rand.Read(keyBytes); err != nil {
-				log.Printf("failed to generate registration key: %s", err)
+			keyValue, err := generateRandomKey()
+			if err != nil {
+				log.Printf("failed to generate register key: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			dto.KeyValue = hex.EncodeToString(keyBytes)
+			dto.KeyValue = keyValue
 		}
 
-		regKey, err := s.DataService.CreateRegistrationKey(dto.KeyValue, dto.InstantRegistration)
-		if err != nil {
+		regKey := mapRegisterKeyDTOToData(dto)
+		if err := s.DataService.CreateRegisterKey(&regKey); err != nil {
 			log.Printf("failed to create regkey: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		dto.ID = regKey.ID
-		dto.CreatedAt = regKey.CreatedAt
-
-		bb, err := json.Marshal(dto)
-		if err != nil {
+		dto = mapRegisterKeyDataToDTO(regKey)
+		if err := json.NewEncoder(w).Encode(&dto); err != nil {
 			log.Printf("failed to marshal regkey to json: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		w.Write(bb)
 		w.WriteHeader(http.StatusCreated)
 	}
 }

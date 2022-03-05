@@ -1,30 +1,28 @@
 package regkey
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 )
 
-type RegistrationKey struct {
-	ID                  int64
-	CreatedAt           time.Time
-	ClaimedAt           time.Time
-	KeyValue            string
-	InstantRegistration bool
-}
-
-type DataService interface {
-	CreateRegistrationKey(keyValue string, instantRegistration bool) (RegistrationKey, error)
-}
-
 type Service struct {
-	DataService DataService
+	DataService data.Service
 }
 
 func (s Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router := chi.NewRouter()
 	router.Post("/", s.postCreateRegisterKeyHandler())
 	router.ServeHTTP(w, r)
+}
+
+func generateRandomKey() (string, error) {
+	keyBytes := make([]byte, 4)
+	if _, err := rand.Read(keyBytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(keyBytes), nil
 }

@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
 )
 
-func (s Service) getUsersToRegisterHandler() http.HandlerFunc {
+func (s Service) getUsersHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		users, err := s.DataService.Users()
 		if err != nil {
@@ -19,12 +20,12 @@ func (s Service) getUsersToRegisterHandler() http.HandlerFunc {
 			return
 		}
 
-		dtos := make([]userFullDTO, len(users))
+		dtos := make([]userDTO, len(users))
 		for i := range dtos {
-			dtos[i] = mapUserFull(users[i])
+			dtos[i] = mapUserDataToDTO(users[i])
 		}
 
-		if err := json.NewEncoder(w).Encode(users); err != nil {
+		if err := json.NewEncoder(w).Encode(dtos); err != nil {
 			log.Printf("failed to marshal users to json: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -34,7 +35,7 @@ func (s Service) getUsersToRegisterHandler() http.HandlerFunc {
 	}
 }
 
-func (s Service) postRegisterUserHandler() http.HandlerFunc {
+func (s Service) postCreateUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var dto registerDTO
 		if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
@@ -47,21 +48,21 @@ func (s Service) postRegisterUserHandler() http.HandlerFunc {
 			return
 		}
 
-		user := data.User{
-			FirstName: dto.FirstName,
-			LastName:  dto.LastName,
-			Email:     dto.Email,
-		}
-
-		instantRegistration, err := s.DataService.ClaimRegistrationKey(dto.RegistrationKey, user)
-		if err != nil {
-			log.Printf("failed to claim registration key: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
+		user := mapRegisterDTOToData(dto)
+		if err := s.DataService.RegisterUser(&user, dto.RegistrationKey); err != nil {
+			if errors.Is(err, data.ErrRecordNotFound) {
+				w.WriteHeader(http.StatusUnauthorized)
+			} else {
+				log.Printf("failed to claim registration key: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 
-		if instantRegistration {
-			w.WriteHeader(http.StatusUnauthorized)
+		userDTO := mapUserDataToDTO(user)
+		if err := json.NewEncoder(w).Encode(&userDTO); err != nil {
+			log.Printf("failed to marshal user to json: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -69,7 +70,7 @@ func (s Service) postRegisterUserHandler() http.HandlerFunc {
 	}
 }
 
-func (s Service) postCreateUserInLDAPHandler() http.HandlerFunc {
+func (s Service) postRegisterUserInLDAPHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 		if err != nil {
@@ -84,7 +85,8 @@ func (s Service) postCreateUserInLDAPHandler() http.HandlerFunc {
 			return
 		}
 
-		if err := s.LDAPService.CreateUser(user); err != nil {
+		ldapUser := mapUserDataToLDAP(user)
+		if err := s.LDAPService.CreateUser(ldapUser); err != nil {
 			log.Printf("failed to create user with id %q in LDAP: %s", userId, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -24,11 +25,16 @@ type API struct {
 }
 
 type Database struct {
-	Host             string `yaml:"host"`
-	Database         string `yaml:"database"`
-	Username         string `yaml:"username"`
-	Password         string `yaml:"password"`
-	EncryptionSecret string `yaml:"encryption_secret"`
+	Host     string `yaml:"host"`
+	Port     uint16 `yaml:"port"`
+	Database string `yaml:"database"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+func (cfg Database) DSN() string {
+	return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s",
+		cfg.Host, cfg.Port, cfg.Database, cfg.Username, cfg.Password)
 }
 
 type LLDAP struct {

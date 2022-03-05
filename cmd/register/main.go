@@ -16,8 +16,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/app/regkey"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/app/user"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data/postgres"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/ldap"
+	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
+	"github.com/julis-bw-nw/julis-service-register-app/pkg/ldap/lldap"
 )
 
 const (
@@ -63,40 +63,29 @@ func main() {
 		log.Fatalf("Failed to read config from %q, %s", configPath, err)
 	}
 
-	db := postgres.Service{
-		Host:     cfg.Database.Host,
-		Database: cfg.Database.Database,
-		Username: cfg.Database.Username,
-		Password: cfg.Database.Password,
-		Timeout:  time.Second * 3,
-	}
-
-	if err := db.Open(); err != nil {
-		log.Fatalf("Failed to connect to database; %s", err)
-	}
-
-	if err := db.MigrateSchema(); err != nil {
-		log.Fatalf("Failed to migrate database; %s", err)
+	db, err := data.NewPostgres(cfg.Database.DSN())
+	if err != nil {
+		log.Fatalf("Failed connect to DB; %s", err)
 	}
 
 	regKeyService := regkey.Service{
-		DataService: &db,
+		DataService: db,
 	}
 
 	cli := &http.Client{
 		Timeout: time.Second * 3,
 	}
 
-	ldapService := ldap.NewLLDAPService(cli, cfg.LLDAP.Host, ldap.WithAuthenticatorTransport(cfg.LLDAP.Username, cfg.LLDAP.Password))
+	ldapService := lldap.New(cli, cfg.LLDAP.Host, lldap.WithAuthenticatorTransport(cfg.LLDAP.Username, cfg.LLDAP.Password))
 
 	userService := user.Service{
-		DataService: &db,
+		DataService: db,
 		LDAPService: ldapService,
 	}
 
 	fileServer(r, "/", "web/static")
 	r.Route("/api", func(r chi.Router) {
-		r.Handle("/users", userService.Handler())
+		r.Mount("/users", userService.Handler())
 		r.Mount("/regkeys", regKeyService)
 	})
 

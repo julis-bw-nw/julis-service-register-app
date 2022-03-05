@@ -6,6 +6,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
+	"github.com/julis-bw-nw/julis-service-register-app/pkg/ldap"
 )
 
 type registerDTO struct {
@@ -25,18 +26,34 @@ func (dto registerDTO) validate() error {
 	return validation.ValidateStruct(&dto, fieldRules...)
 }
 
-type userFullDTO struct {
-	ID        uint64    `json:"id"`
+func mapRegisterDTOToData(dto registerDTO) data.User {
+	return data.User{
+		FirstName: dto.FirstName,
+		LastName:  dto.LastName,
+		Email:     dto.Email,
+	}
+}
+
+type userDTO struct {
+	ID        uint      `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
 	Email     string    `json:"email"`
 }
 
-func mapUserFull(user data.User) userFullDTO {
-	return userFullDTO{
+func mapUserDataToDTO(user data.User) userDTO {
+	return userDTO{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}
+}
+
+func mapUserDataToLDAP(user data.User) ldap.User {
+	return ldap.User{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,

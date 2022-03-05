@@ -1,4 +1,4 @@
-package ldap
+package lldap
 
 import (
 	"bytes"
@@ -6,16 +6,27 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 
-	"github.com/julis-bw-nw/julis-service-register-app/internal/pkg/data"
+	"github.com/julis-bw-nw/julis-service-register-app/pkg/ldap"
 )
 
-var ErrResponseNotOK = errors.New("response is not 200 OK")
+type service struct {
+	client *http.Client
 
-type Service interface {
-	CreateUser(user data.User) error
+	mu   sync.RWMutex
+	host string
+}
+
+func New(c *http.Client, host string, options ...Option) ldap.Service {
+	for _, opt := range options {
+		opt(c, host)
+	}
+
+	return &service{
+		client: c,
+		host:   host,
+	}
 }
 
 type Option func(c *http.Client, addr string)
@@ -23,7 +34,9 @@ type Option func(c *http.Client, addr string)
 func WithAuthenticatorTransport(username, password string) Option {
 	return func(c *http.Client, addr string) {
 		at := authenticatorTransport{
-			client:   c,
+			client: &http.Client{
+				Timeout: c.Timeout,
+			},
 			addr:     addr,
 			username: username,
 			password: password,
@@ -84,7 +97,7 @@ func (at *authenticatorTransport) authenticate() (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", ErrResponseNotOK
+		return "", ldap.ErrAuthenticationFailed
 	}
 
 	var tokens loginResponseDTO
@@ -117,7 +130,7 @@ func (at *authenticatorTransport) refresh() (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", ErrResponseNotOK
+		return "", errors.New("failed to refresh token")
 	}
 
 	var token refreshResponseDTO
@@ -151,73 +164,4 @@ func (at *authenticatorTransport) RoundTrip(r *http.Request) (*http.Response, er
 
 	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 	return http.DefaultTransport.RoundTrip(r)
-}
-
-func NewLLDAPService(c *http.Client, addr string, options ...Option) Service {
-	for _, opt := range options {
-		opt(c, addr)
-	}
-
-	return &lldapService{
-		client: c,
-		addr:   addr,
-	}
-}
-
-type lldapService struct {
-	client *http.Client
-
-	mu   sync.RWMutex
-	addr string
-}
-
-func userId(user data.User) string {
-	return strings.ToLower(string(user.FirstName[0]) + user.LastName)
-}
-
-func displayName(user data.User) string {
-	return fmt.Sprintf("%s %s", user.FirstName, user.LastName)
-}
-
-func (s *lldapService) CreateUser(user data.User) error {
-	graphql := map[string]interface{}{
-		"variables": map[string]interface{}{
-			"user": map[string]interface{}{
-				"id":          userId(user),
-				"email":       user.Email,
-				"displayName": displayName(user),
-				"firstName":   user.FirstName,
-				"lastName":    user.LastName,
-			},
-		},
-		"query":         "mutation CreateUser($user: CreateUserInput!) { createUser(user: $user) { id creationDate } }",
-		"operationName": "CreateUser",
-	}
-
-	bb, err := json.Marshal(graphql)
-	if err != nil {
-		return err
-	}
-
-	s.mu.RLock()
-	addr := s.addr
-	s.mu.RUnlock()
-	url := fmt.Sprintf("http://%s/%s", addr, "api/graphql")
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bb))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return ErrResponseNotOK
-	}
-
-	return nil
 }
