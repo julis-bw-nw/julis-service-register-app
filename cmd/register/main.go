@@ -58,6 +58,8 @@ func main() {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	log.Println("Starting Julis Register Service")
+
 	cfg, err := loadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Failed to read config from %q, %s", configPath, err)
@@ -86,7 +88,7 @@ func main() {
 	fileServer(r, "/", "web/static")
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/users", userService.Handler())
-		r.Mount("/regkeys", regKeyService)
+		r.Mount("/register-keys", regKeyService.Handler())
 	})
 
 	srv := http.Server{
@@ -99,6 +101,8 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
+
+	log.Println("Service is online")
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
