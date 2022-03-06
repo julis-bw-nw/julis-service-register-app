@@ -6,19 +6,19 @@ services:
     container_name: postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - 5432:5432
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
 
   lldap:
     image: nitnelave/lldap:latest
     container_name: lldap
     ports:
-      - "17170:17170"
+      - 17170:17170
     volumes:
-      - "./devdata/lldap:/data"
+      - ./devdata/lldap:/data
     environment:
-      - LLDAP_JWT_SECRET=lldap
-      - LLDAP_LDAP_USER_PASS=password1
-      - LLDAP_LDAP_BASE_DN=dc=example,dc=com
+      LLDAP_JWT_SECRET: "lldap"
+      LLDAP_LDAP_USER_PASS: "password1"
+      LLDAP_LDAP_BASE_DN: "dc=example,dc=com"

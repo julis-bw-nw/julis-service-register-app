@@ -11,8 +11,7 @@ test:
 	go test -race -timeout 30s ./...
 
 run:
-	JULIS_REGISTER_APP_CONFIG_PATH=config.dev.yml \
-	go run -race ./cmd/register/.
+	go run -race . run -c config.dev.yml
 
 test-docker:
 	docker-compose -p register-app -f deployments/docker-compose.test.yml build --no-cache --force-rm
