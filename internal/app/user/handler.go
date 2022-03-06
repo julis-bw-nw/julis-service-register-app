@@ -52,6 +52,8 @@ func (s Service) postRegisterUserHandler() http.HandlerFunc {
 		if err := s.DataService.RegisterUser(&user, dto.RegistrationKey); err != nil {
 			if errors.Is(err, data.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusUnauthorized)
+			} else if errors.Is(err, data.ErrEmailAlreadyUsed) {
+				w.WriteHeader(http.StatusConflict)
 			} else {
 				log.Printf("failed to claim registration key: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -81,6 +83,12 @@ func (s Service) postApproveUserHandler() http.HandlerFunc {
 		user, err := s.DataService.UserByID(userId)
 		if err != nil {
 			log.Printf("failed to query user with id %q: %s", userId, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if err := s.DataService.ApproveUser(&user); err != nil {
+			log.Printf("failed to approve user with id %q: %s", userId, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

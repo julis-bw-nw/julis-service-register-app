@@ -35,20 +35,22 @@ func mapRegisterDTOToData(dto registerDTO) data.User {
 }
 
 type userDTO struct {
-	ID        uint      `json:"id"`
-	CreatedAt time.Time `json:"createdAt"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Email     string    `json:"email"`
+	ID         uint       `json:"id"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	ApprovedAt *time.Time `json:"approvedAt,omitempty"`
+	FirstName  string     `json:"firstName"`
+	LastName   string     `json:"lastName"`
+	Email      string     `json:"email"`
 }
 
 func mapUserDataToDTO(user data.User) userDTO {
 	return userDTO{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
+		ID:         user.ID,
+		CreatedAt:  user.CreatedAt,
+		ApprovedAt: user.ApprovedAt,
+		FirstName:  user.FirstName,
+		LastName:   user.LastName,
+		Email:      user.Email,
 	}
 }
 
