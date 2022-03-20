@@ -2,45 +2,85 @@ package data
 
 import (
 	"errors"
+	"time"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/julis-bw-nw/julis-service-register-app/internal/app/register/user"
-	"golang.org/x/net/context"
+	"gorm.io/gorm"
 )
 
-func (db *Service) ClaimRegistrationKey(keyValue string, u user.Encrypted) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), db.Timeout)
-	defer cancel()
+var ErrEmailAlreadyUsed = errors.New("email was already used")
 
-	var keyId int64
-	if err := db.QueryRow(ctx, `
-SELECT id
-FROM registration_keys
-WHERE key_value = $1
-AND claimed_at IS NULL;
-`, keyValue).Scan(&keyId); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
+type UserService interface {
+	UserByID(id int64) (User, error)
+	Users() ([]User, error)
+	RegisterUser(user *User, regKeyValue string) error
+	ApproveUser(user *User) error
+}
+
+type User struct {
+	gorm.Model
+	RegisterKeyID uint
+	RegisterKey   RegisterKey
+	ApprovedAt    *time.Time
+	FirstName     string
+	LastName      string
+	Email         string `gorm:"unique"`
+}
+
+func (user *User) AfterCreate(tx *gorm.DB) error {
+	v, ok := tx.Get("instantRegistration")
+	if !ok {
+		return nil
 	}
 
-	return true, db.BeginFunc(ctx, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `
-INSERT INTO unregistered_users
-(registration_key_id, first_name, last_name, email, password)
-VALUSE ($1, $2, $3, $4, $5);
-		`, keyId, u.FirstName, u.LastName, u.Email, u.Password); err != nil {
-			return err
+	isInstantRegistration, ok := v.(bool)
+	if !ok {
+		return nil
+	}
+
+	if !isInstantRegistration {
+		return nil
+	}
+
+	return tx.Model(user).Update("approved_at", time.Now()).Error
+}
+
+func (db service) UserByID(id int64) (User, error) {
+	var user User
+	return user, db.First(&user, id).Error
+}
+
+func (db service) Users() ([]User, error) {
+	var users []User
+	return users, db.Find(&users).Error
+}
+
+func (db service) RegisterUser(user *User, regKeyValue string) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		var regKey RegisterKey
+		result := tx.Raw(`
+SELECT *
+FROM register_keys k
+WHERE k.key_value = ?
+AND max_claims > (
+	SELECT COUNT(u.id)
+	FROM users u
+	WHERE k.id = u.register_key_id
+);`, regKeyValue).Scan(&regKey)
+		if result.Error != nil {
+			return result.Error
+		} else if result.RowsAffected == 0 {
+			return ErrRecordNotFound
 		}
 
-		if _, err := tx.Exec(ctx, `
-INSERT INTO registration_keys
-(claimed_at)
-VALUSE (CURRENT_TIMESTAMP)
-WHERE id = $1;`, keyId); err != nil {
-			return err
+		if tx.First(&User{}, "email = ?", user.Email).RowsAffected > 0 {
+			return ErrEmailAlreadyUsed
 		}
-		return nil
+
+		user.RegisterKeyID = regKey.ID
+		return db.Set("instantRegistration", regKey.InstantRegistration).Create(user).Error
 	})
+}
+
+func (db service) ApproveUser(user *User) error {
+	return db.Model(user).Update("approved_at", time.Now()).Error
 }

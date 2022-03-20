@@ -23,3 +23,9 @@ config.dev.yml
 
 # Generated files
 *_mock_test.go
+
+# Data for dev docker volumes
+deployments/devdata
+
+# Generated Web CSS
+web/src/css
